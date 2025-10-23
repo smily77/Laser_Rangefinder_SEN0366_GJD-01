@@ -1,0 +1,28 @@
+# Arduino IDE files
+*.ino.eep
+*.ino.elf
+*.ino.hex
+
+# Temporary files
+*.tmp
+*.bak
+*.swp
+*~
+
+# Build output
+build/
+*.o
+*.a
+*.so
+
+# IDE files
+.vscode/
+.idea/
+*.code-workspace
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Downloaded manual (can be re-downloaded)
+SEN0366_Manual.pdf

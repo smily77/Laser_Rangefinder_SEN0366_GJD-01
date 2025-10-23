@@ -1,0 +1,59 @@
+#######################################
+# Syntax Coloring Map for LaserRangefinder_SEN0366
+#######################################
+
+#######################################
+# Datatypes (KEYWORD1)
+#######################################
+
+LaserRangefinder_SEN0366	KEYWORD1
+
+#######################################
+# Methods and Functions (KEYWORD2)
+#######################################
+
+begin	KEYWORD2
+singleMeasurement	KEYWORD2
+startContinuousMeasurement	KEYWORD2
+readContinuousDistance	KEYWORD2
+stopContinuousMeasurement	KEYWORD2
+takeSingleMeasurementToCache	KEYWORD2
+readCache	KEYWORD2
+setAddress	KEYWORD2
+setResolution	KEYWORD2
+setFrequency	KEYWORD2
+setDataReturnInterval	KEYWORD2
+setMeasurementStartingPoint	KEYWORD2
+setAutoStart	KEYWORD2
+reviseDistance	KEYWORD2
+controlLaser	KEYWORD2
+shutDown	KEYWORD2
+readParameter	KEYWORD2
+readMachineNumber	KEYWORD2
+setDeviceAddress	KEYWORD2
+getDeviceAddress	KEYWORD2
+isBroadcast	KEYWORD2
+setTimeout	KEYWORD2
+setDebug	KEYWORD2
+
+#######################################
+# Constants (LITERAL1)
+#######################################
+
+SEN0366_BROADCAST_ADDR	LITERAL1
+SEN0366_MIN_ADDR	LITERAL1
+SEN0366_MAX_ADDR	LITERAL1
+SEN0366_BAUD_RATE	LITERAL1
+SEN0366_RESOLUTION_1MM	LITERAL1
+SEN0366_RESOLUTION_01MM	LITERAL1
+SEN0366_FREQ_0HZ	LITERAL1
+SEN0366_FREQ_5HZ	LITERAL1
+SEN0366_FREQ_10HZ	LITERAL1
+SEN0366_FREQ_20HZ	LITERAL1
+SEN0366_MEASURE_FROM_FRONT	LITERAL1
+SEN0366_MEASURE_FROM_REAR	LITERAL1
+SEN0366_AUTOSTART_DISABLE	LITERAL1
+SEN0366_AUTOSTART_ENABLE	LITERAL1
+SEN0366_LASER_OFF	LITERAL1
+SEN0366_LASER_ON	LITERAL1
+SEN0366_TIMEOUT_MS	LITERAL1
