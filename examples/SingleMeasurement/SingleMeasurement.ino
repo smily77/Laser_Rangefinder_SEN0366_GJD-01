@@ -25,8 +25,8 @@
 // For Arduino Uno: Use SoftwareSerial
 
 #if defined(ESP32)
-  #define RXD2 16
-  #define TXD2 17
+  #define RXD2 32
+  #define TXD2 33
   LaserRangefinder_SEN0366 rangefinder(&Serial2);
 #elif defined(__AVR_ATmega2560__)
   LaserRangefinder_SEN0366 rangefinder(&Serial1);
@@ -59,7 +59,7 @@ void setup() {
 
   // Configure rangefinder settings
   Serial.println("Configuring rangefinder...");
-
+/*
   // Set resolution to 1mm (faster) or 0.1mm (more precise)
   if (rangefinder.setResolution(SEN0366_RESOLUTION_1MM)) {
     Serial.println("✓ Resolution set to 1mm");
@@ -68,7 +68,7 @@ void setup() {
   }
 
   delay(100);
-
+*/
   Serial.println();
   Serial.println("Ready! Taking measurements every 2 seconds...");
   Serial.println("Distance readings:");

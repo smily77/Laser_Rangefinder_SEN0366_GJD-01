@@ -27,8 +27,8 @@
 #include <LaserRangefinder_SEN0366.h>
 
 // Port A pins on M5Stack Core2
-#define RXD2 33  // G33
-#define TXD2 32  // G32
+#define RXD2 32  // G33
+#define TXD2 33  // G32
 
 // Create rangefinder object using Serial2 (Port A)
 LaserRangefinder_SEN0366 rangefinder(&Serial2);
