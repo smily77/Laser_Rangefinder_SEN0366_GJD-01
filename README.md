@@ -69,17 +69,27 @@ GND        →  GND
 
 ### Einfaches Beispiel - Einzelmessung
 
+**WICHTIG für ESP32/M5Stack:** Die RX/TX Pins müssen bei `begin()` übergeben werden!
+
 ```cpp
 #include <LaserRangefinder_SEN0366.h>
 
-// ESP32 mit Serial2
+// Für M5Stack Core2 Port A:
+#define RXD 33  // G33
+#define TXD 32  // G32
+
+// Für andere ESP32:
+// #define RXD 16
+// #define TXD 17
+
 LaserRangefinder_SEN0366 rangefinder(&Serial2);
 
 void setup() {
   Serial.begin(115200);
-  Serial2.begin(9600, SERIAL_8N1, 16, 17); // RX=16, TX=17
 
-  rangefinder.begin(9600);
+  // RICHTIG: Pins bei begin() übergeben (ESP32)
+  rangefinder.begin(9600, RXD, TXD);
+
   rangefinder.setResolution(SEN0366_RESOLUTION_1MM);
 }
 
@@ -101,13 +111,17 @@ void loop() {
 ```cpp
 #include <LaserRangefinder_SEN0366.h>
 
+#define RXD 33  // Für M5Stack Core2
+#define TXD 32
+
 LaserRangefinder_SEN0366 rangefinder(&Serial2);
 
 void setup() {
   Serial.begin(115200);
-  Serial2.begin(9600, SERIAL_8N1, 16, 17);
 
-  rangefinder.begin(9600);
+  // Pins bei begin() übergeben
+  rangefinder.begin(9600, RXD, TXD);
+
   rangefinder.setFrequency(SEN0366_FREQ_10HZ);
   rangefinder.startContinuousMeasurement();
 }
@@ -289,11 +303,35 @@ Umfassendes Beispiel mit interaktivem Menü für alle Funktionen.
 
 ## Fehlerbehebung
 
+### ⚠️ WICHTIG: Sensor antwortet nicht auf ESP32/M5Stack
+**Häufigstes Problem:** Die RX/TX Pins wurden nicht korrekt initialisiert!
+
+**FALSCH** ❌:
+```cpp
+Serial2.begin(9600, SERIAL_8N1, RXD, TXD);
+rangefinder.begin(9600);  // Überschreibt die Pins!
+```
+
+**RICHTIG** ✅:
+```cpp
+rangefinder.begin(9600, RXD, TXD);  // Pins direkt übergeben
+```
+
+**Alternative** ✅:
+```cpp
+Serial2.begin(9600, SERIAL_8N1, RXD, TXD);
+rangefinder.begin();  // Ohne Parameter - nutzt existierende Initialisierung
+```
+
 ### Keine Antwort vom Sensor
-1. Überprüfen Sie die Verkabelung (TX ↔ RX vertauscht?)
-2. Stellen Sie sicher, dass 9600 Baud verwendet wird
-3. Prüfen Sie die Stromversorgung (5V)
-4. Aktivieren Sie den Debug-Modus: `rangefinder.setDebug(true)`
+1. **Für ESP32:** Verwenden Sie `rangefinder.begin(9600, RXD, TXD)` mit den richtigen Pins!
+2. Überprüfen Sie die Verkabelung:
+   - SEN0366 TX → ESP32 RX
+   - SEN0366 RX → ESP32 TX
+   - **Nicht** direkt kreuzen!
+3. Stellen Sie sicher, dass 9600 Baud verwendet wird
+4. Prüfen Sie die Stromversorgung (5V, min. 200mA)
+5. Aktivieren Sie den Debug-Modus: `rangefinder.setDebug(true)`
 
 ### Falsche Messwerte
 1. Überprüfen Sie die Auflösungseinstellung
@@ -301,10 +339,11 @@ Umfassendes Beispiel mit interaktivem Menü für alle Funktionen.
 3. Vermeiden Sie direkte Sonneneinstrahlung
 4. Erhöhen Sie das Timeout: `rangefinder.setTimeout(2000)`
 
-### M5Stack Beispiel startet nicht
-1. Installieren Sie M5Unified.h: `Sketch` → `Include Library` → `Manage Libraries` → Suche "M5Unified"
-2. Überprüfen Sie die Port A Verbindung (G32/G33)
-3. Stellen Sie sicher, dass Serial2 verfügbar ist
+### M5Stack Core2 spezifische Probleme
+1. Port A nutzt: G32 (TX) und G33 (RX)
+2. Verwenden Sie: `rangefinder.begin(9600, 33, 32);`
+3. Installieren Sie M5Unified.h: `Sketch` → `Include Library` → `Manage Libraries` → Suche "M5Unified"
+4. Stellen Sie sicher, dass Serial2 verfügbar ist
 
 ## Lizenz
 

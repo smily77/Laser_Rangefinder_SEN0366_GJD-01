@@ -19,11 +19,33 @@ LaserRangefinder_SEN0366::LaserRangefinder_SEN0366(HardwareSerial* serial, uint8
       _debug(false), _debugSerial(&Serial) {
 }
 
+void LaserRangefinder_SEN0366::begin() {
+    // Serial already initialized by user, just prepare
+    delay(100); // Wait for serial to stabilize
+    clearSerialBuffer();
+}
+
 void LaserRangefinder_SEN0366::begin(uint32_t baudRate) {
+#if defined(ESP32)
+    // For ESP32, we cannot set pins here - user must call begin(baudRate, rxPin, txPin)
+    // or initialize Serial themselves before calling this
+    if (_debug) {
+        _debugSerial->println("WARNING: For ESP32, use begin(baudRate, rxPin, txPin) or initialize Serial manually!");
+    }
+#endif
     _serial->begin(baudRate);
     delay(100); // Wait for serial to stabilize
     clearSerialBuffer();
 }
+
+#if defined(ESP32)
+void LaserRangefinder_SEN0366::begin(uint32_t baudRate, int8_t rxPin, int8_t txPin) {
+    // ESP32-specific initialization with custom pins
+    _serial->begin(baudRate, SERIAL_8N1, rxPin, txPin);
+    delay(100); // Wait for serial to stabilize
+    clearSerialBuffer();
+}
+#endif
 
 // ==================== Measurement Commands ====================
 

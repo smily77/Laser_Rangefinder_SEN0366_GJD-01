@@ -70,7 +70,9 @@ void setup() {
     Serial.begin(115200);
     Serial.println("Initializing SEN0366 Laser Rangefinder...");
 
-    rangefinder.begin(9600);
+    // IMPORTANT: For M5Stack Core2, use begin() with RX/TX pins for Port A
+    // Port A: TX=G32 (TXD2), RX=G33 (RXD2)
+    rangefinder.begin(9600, RXD2, TXD2);
     delay(500);
 
     // Configure rangefinder for optimal continuous measurement

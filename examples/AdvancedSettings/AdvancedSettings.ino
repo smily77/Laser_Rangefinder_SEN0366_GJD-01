@@ -52,10 +52,15 @@ void setup() {
 
   // Initialize rangefinder
   #if defined(ESP32)
-    Serial2.begin(9600, SERIAL_8N1, RXD2, TXD2);
+    // For ESP32: Use begin() with RX/TX pins
+    rangefinder.begin(9600, RXD2, TXD2);
+  #elif defined(__AVR_ATmega2560__)
+    // For Arduino Mega: Serial1 has fixed pins
+    rangefinder.begin(9600);
+  #else
+    rangefinder.begin(9600);
   #endif
 
-  rangefinder.begin(9600);
   delay(500);
 
   // Enable debug output

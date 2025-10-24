@@ -48,13 +48,18 @@ void setup() {
   Serial.println("Initializing rangefinder...");
 
   #if defined(ESP32)
-    Serial2.begin(9600, SERIAL_8N1, RXD2, TXD2);
+    // For ESP32: Use begin() with RX/TX pins - this is the CORRECT way!
+    rangefinder.begin(9600, RXD2, TXD2);
+  #elif defined(__AVR_ATmega2560__)
+    // For Arduino Mega: Serial1 has fixed pins
+    rangefinder.begin(9600);
+  #else
+    rangefinder.begin(9600);
   #endif
 
-  rangefinder.begin(9600);
   delay(500);
 
-  // Optional: Enable debug output
+  // Optional: Enable debug output to see raw protocol data
   // rangefinder.setDebug(true);
 
   // Configure rangefinder settings
@@ -62,9 +67,9 @@ void setup() {
 /*
   // Set resolution to 1mm (faster) or 0.1mm (more precise)
   if (rangefinder.setResolution(SEN0366_RESOLUTION_1MM)) {
-    Serial.println("✓ Resolution set to 1mm");
+    Serial.println("Resolution set to 1mm");
   } else {
-    Serial.println("✗ Failed to set resolution");
+    Serial.println("Failed to set resolution");
   }
 
   delay(100);

@@ -71,10 +71,27 @@ public:
     LaserRangefinder_SEN0366(HardwareSerial* serial, uint8_t address);
 
     /**
-     * @brief Initialize the rangefinder
-     * @param baudRate Baud rate (default: 9600)
+     * @brief Initialize the rangefinder (use when Serial already initialized)
+     * Use this when you've already called Serial.begin() yourself
      */
-    void begin(uint32_t baudRate = SEN0366_BAUD_RATE);
+    void begin();
+
+    /**
+     * @brief Initialize the rangefinder with automatic Serial setup
+     * @param baudRate Baud rate (default: 9600)
+     * WARNING: For ESP32, this will NOT set RX/TX pins! Use begin(baudRate, rxPin, txPin) instead
+     */
+    void begin(uint32_t baudRate);
+
+#if defined(ESP32)
+    /**
+     * @brief Initialize the rangefinder for ESP32 with custom pins
+     * @param baudRate Baud rate (default: 9600)
+     * @param rxPin RX pin number
+     * @param txPin TX pin number
+     */
+    void begin(uint32_t baudRate, int8_t rxPin, int8_t txPin);
+#endif
 
     // ==================== Measurement Commands ====================
 
