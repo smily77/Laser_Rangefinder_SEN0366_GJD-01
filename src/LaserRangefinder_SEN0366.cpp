@@ -659,13 +659,13 @@ bool LaserRangefinder_SEN0366::parseDistanceResponse(const uint8_t* response, ui
         return false;
     }
 
-    // Convert to float
+    // Convert to float (sensor returns value in METERS)
     distance = atof(distStr);
 
     if (_debug) {
         _debugSerial->print("Parsed distance: ");
         _debugSerial->print(distance);
-        _debugSerial->println(" mm");
+        _debugSerial->println(" m");
     }
 
     return true;

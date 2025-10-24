@@ -84,22 +84,23 @@ void loop() {
   float distance;
 
   // Perform single measurement
+  // IMPORTANT: Sensor returns distance in METERS!
   if (rangefinder.singleMeasurement(distance)) {
     // Display result
     Serial.print("Distance: ");
-    Serial.print(distance, 1);
-    Serial.print(" mm  |  ");
-    Serial.print(distance / 10.0, 2);
+    Serial.print(distance, 3);
+    Serial.print(" m  |  ");
+    Serial.print(distance * 100.0, 1);
     Serial.print(" cm  |  ");
-    Serial.print(distance / 1000.0, 3);
-    Serial.println(" m");
+    Serial.print(distance * 1000.0, 0);
+    Serial.println(" mm");
 
     // Optional: Categorize distance
-    if (distance < 100.0) {
+    if (distance < 0.1) {
       Serial.println("  → Very close!");
-    } else if (distance < 1000.0) {
+    } else if (distance < 1.0) {
       Serial.println("  → Close range");
-    } else if (distance < 10000.0) {
+    } else if (distance < 10.0) {
       Serial.println("  → Medium range");
     } else {
       Serial.println("  → Long range");

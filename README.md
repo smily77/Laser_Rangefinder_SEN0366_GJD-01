@@ -34,8 +34,8 @@ Diese vollständige Arduino-Bibliothek implementiert das komplette UART-Protokol
 ### Beispiel-Verbindung für M5Stack Core2 (Port A)
 ```
 SEN0366    →  M5Stack Core2
-TX         →  G33 (RX)
-RX         →  G32 (TX)
+TX         →  G32 (RX)
+RX         →  G33 (TX)
 VCC        →  5V
 GND        →  GND
 ```
@@ -71,12 +71,14 @@ GND        →  GND
 
 **WICHTIG für ESP32/M5Stack:** Die RX/TX Pins müssen bei `begin()` übergeben werden!
 
+**WICHTIG:** Der Sensor liefert die Distanz in **METERN**, nicht in mm!
+
 ```cpp
 #include <LaserRangefinder_SEN0366.h>
 
 // Für M5Stack Core2 Port A:
-#define RXD 33  // G33
-#define TXD 32  // G32
+#define RXD 32  // G32 (RX Pin)
+#define TXD 33  // G33 (TX Pin)
 
 // Für andere ESP32:
 // #define RXD 16
@@ -96,10 +98,13 @@ void setup() {
 void loop() {
   float distance;
 
+  // WICHTIG: distance ist in METERN!
   if (rangefinder.singleMeasurement(distance)) {
     Serial.print("Entfernung: ");
-    Serial.print(distance);
-    Serial.println(" mm");
+    Serial.print(distance, 3);
+    Serial.print(" m (");
+    Serial.print(distance * 1000.0, 0);
+    Serial.println(" mm)");
   }
 
   delay(1000);
@@ -111,8 +116,8 @@ void loop() {
 ```cpp
 #include <LaserRangefinder_SEN0366.h>
 
-#define RXD 33  // Für M5Stack Core2
-#define TXD 32
+#define RXD 32  // Für M5Stack Core2 (RX Pin)
+#define TXD 33  // (TX Pin)
 
 LaserRangefinder_SEN0366 rangefinder(&Serial2);
 
@@ -129,10 +134,13 @@ void setup() {
 void loop() {
   float distance;
 
+  // WICHTIG: distance ist in METERN!
   if (rangefinder.readContinuousDistance(distance)) {
     Serial.print("Entfernung: ");
-    Serial.print(distance);
-    Serial.println(" mm");
+    Serial.print(distance, 3);
+    Serial.print(" m (");
+    Serial.print(distance * 1000.0, 0);
+    Serial.println(" mm)");
   }
 
   delay(10);
@@ -340,10 +348,16 @@ rangefinder.begin();  // Ohne Parameter - nutzt existierende Initialisierung
 4. Erhöhen Sie das Timeout: `rangefinder.setTimeout(2000)`
 
 ### M5Stack Core2 spezifische Probleme
-1. Port A nutzt: G32 (TX) und G33 (RX)
-2. Verwenden Sie: `rangefinder.begin(9600, 33, 32);`
+1. Port A nutzt: G32 (RX) und G33 (TX)
+2. Verwenden Sie: `rangefinder.begin(9600, 32, 33);` (RX=32, TX=33)
 3. Installieren Sie M5Unified.h: `Sketch` → `Include Library` → `Manage Libraries` → Suche "M5Unified"
 4. Stellen Sie sicher, dass Serial2 verfügbar ist
+
+### WICHTIG: Einheit der Distanz
+**Der Sensor liefert die Distanz in METERN, nicht in Millimetern!**
+- `distance` Wert = Meter
+- Um mm zu erhalten: `distance * 1000.0`
+- Um cm zu erhalten: `distance * 100.0`
 
 ## Lizenz
 

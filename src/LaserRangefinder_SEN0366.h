@@ -97,7 +97,7 @@ public:
 
     /**
      * @brief Perform a single distance measurement
-     * @param distance Output parameter for distance in mm
+     * @param distance Output parameter for distance in METERS
      * @return true if successful, false otherwise
      */
     bool singleMeasurement(float& distance);
@@ -110,7 +110,7 @@ public:
 
     /**
      * @brief Read the next distance value in continuous mode
-     * @param distance Output parameter for distance in mm
+     * @param distance Output parameter for distance in METERS
      * @return true if data available and valid, false otherwise
      */
     bool readContinuousDistance(float& distance);
@@ -129,7 +129,7 @@ public:
 
     /**
      * @brief Read the cached measurement value
-     * @param distance Output parameter for distance in mm
+     * @param distance Output parameter for distance in METERS
      * @return true if successful, false otherwise
      */
     bool readCache(float& distance);

@@ -22,8 +22,8 @@
 
 // Definiere deine RX und TX Pins hier
 // Für M5Stack Core2 Port A:
-#define RXD 33  // G33
-#define TXD 32  // G32
+#define RXD 32  // G32 (RX Pin)
+#define TXD 33  // G33 (TX Pin)
 
 // Für andere ESP32 Boards, verwende z.B.:
 // #define RXD 16
@@ -54,15 +54,16 @@ void loop() {
   float distance;
 
   // Einzelmessung durchführen
+  // WICHTIG: Der Sensor liefert die Distanz in METERN!
   if (rangefinder.singleMeasurement(distance)) {
     // Erfolgreich gemessen
     Serial.print("Distanz: ");
-    Serial.print(distance);
-    Serial.print(" mm = ");
-    Serial.print(distance / 10.0);
+    Serial.print(distance, 3);
+    Serial.print(" m = ");
+    Serial.print(distance * 100.0, 1);
     Serial.print(" cm = ");
-    Serial.print(distance / 1000.0);
-    Serial.println(" m");
+    Serial.print(distance * 1000.0, 0);
+    Serial.println(" mm");
   } else {
     // Fehler beim Messen
     Serial.println("Messfehler!");

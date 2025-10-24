@@ -311,11 +311,14 @@ void demonstrateSingleMeasurement() {
     Serial.print(": ");
 
     float distance;
+    // IMPORTANT: Sensor returns distance in METERS!
     if (rangefinder.singleMeasurement(distance)) {
-      Serial.print(distance, 1);
-      Serial.print(" mm (");
-      Serial.print(distance / 10.0, 2);
-      Serial.println(" cm)");
+      Serial.print(distance, 3);
+      Serial.print(" m (");
+      Serial.print(distance * 100.0, 1);
+      Serial.print(" cm / ");
+      Serial.print(distance * 1000.0, 0);
+      Serial.println(" mm)");
     } else {
       Serial.println("FAILED");
     }
@@ -342,15 +345,18 @@ void demonstrateContinuousMeasurement() {
 
   while (millis() - startTime < 10000 && !Serial.available()) {
     float distance;
+    // IMPORTANT: Sensor returns distance in METERS!
     if (rangefinder.readContinuousDistance(distance)) {
       count++;
       Serial.print("[");
       Serial.print(count);
       Serial.print("] ");
-      Serial.print(distance, 1);
-      Serial.print(" mm (");
-      Serial.print(distance / 10.0, 2);
-      Serial.println(" cm)");
+      Serial.print(distance, 3);
+      Serial.print(" m (");
+      Serial.print(distance * 100.0, 1);
+      Serial.print(" cm / ");
+      Serial.print(distance * 1000.0, 0);
+      Serial.println(" mm)");
     }
     delay(50);
   }
@@ -383,12 +389,15 @@ void demonstrateSynchronizedMeasurement() {
   // Read cached value
   Serial.println("Reading cached value...");
   float distance;
+  // IMPORTANT: Sensor returns distance in METERS!
   if (rangefinder.readCache(distance)) {
     Serial.print("✓ Cached distance: ");
-    Serial.print(distance, 1);
-    Serial.print(" mm (");
-    Serial.print(distance / 10.0, 2);
-    Serial.println(" cm)");
+    Serial.print(distance, 3);
+    Serial.print(" m (");
+    Serial.print(distance * 100.0, 1);
+    Serial.print(" cm / ");
+    Serial.print(distance * 1000.0, 0);
+    Serial.println(" mm)");
   } else {
     Serial.println("✗ Failed to read cache");
   }

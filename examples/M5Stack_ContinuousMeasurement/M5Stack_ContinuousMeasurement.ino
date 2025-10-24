@@ -8,8 +8,8 @@
  * Hardware Setup:
  * - M5Stack Core2
  * - SEN0366 Laser Rangefinder connected to Port A
- *   - TX (Rangefinder) -> G33 (RX on M5Stack)
- *   - RX (Rangefinder) -> G32 (TX on M5Stack)
+ *   - TX (Rangefinder) -> G32 (RX on M5Stack)
+ *   - RX (Rangefinder) -> G33 (TX on M5Stack)
  *   - VCC -> 5V
  *   - GND -> GND
  *
@@ -27,8 +27,8 @@
 #include <LaserRangefinder_SEN0366.h>
 
 // Port A pins on M5Stack Core2
-#define RXD2 32  // G33
-#define TXD2 33  // G32
+#define RXD2 32  // G32 (RX Pin)
+#define TXD2 33  // G33 (TX Pin)
 
 // Create rangefinder object using Serial2 (Port A)
 LaserRangefinder_SEN0366 rangefinder(&Serial2);
@@ -71,7 +71,7 @@ void setup() {
     Serial.println("Initializing SEN0366 Laser Rangefinder...");
 
     // IMPORTANT: For M5Stack Core2, use begin() with RX/TX pins for Port A
-    // Port A: TX=G32 (TXD2), RX=G33 (RXD2)
+    // Port A: RX=G32 (RXD2), TX=G33 (TXD2)
     rangefinder.begin(9600, RXD2, TXD2);
     delay(500);
 
@@ -139,12 +139,15 @@ void loop() {
             lastMeasurementTime = millis();
 
             // Print to serial for debugging
+            // IMPORTANT: Sensor returns distance in METERS
             if (measurementCount % 10 == 0) {
                 Serial.print("Distance: ");
-                Serial.print(currentDistance);
-                Serial.print(" mm (");
-                Serial.print(currentDistance / 10.0);
-                Serial.print(" cm) - Count: ");
+                Serial.print(currentDistance, 3);
+                Serial.print(" m (");
+                Serial.print(currentDistance * 100.0, 1);
+                Serial.print(" cm / ");
+                Serial.print(currentDistance * 1000.0, 0);
+                Serial.print(" mm) - Count: ");
                 Serial.println(measurementCount);
             }
         } else {
@@ -214,17 +217,18 @@ void updateDistanceDisplay() {
     // Clear distance area
     M5.Display.fillRect(0, 50, SCREEN_WIDTH, 140, COLOR_BG);
 
-    // Display distance in mm
+    // Display distance in meters (sensor returns METERS!)
     M5.Display.setTextColor(COLOR_DISTANCE);
     M5.Display.setFont(&fonts::FreeSansBold24pt7b);
 
     char distStr[20];
-    if (currentDistance < 1000.0) {
-        sprintf(distStr, "%.1f", currentDistance);
-    } else if (currentDistance < 10000.0) {
-        sprintf(distStr, "%.0f", currentDistance);
+    // Format distance in meters with appropriate precision
+    if (currentDistance < 1.0) {
+        sprintf(distStr, "%.3f", currentDistance);
+    } else if (currentDistance < 10.0) {
+        sprintf(distStr, "%.2f", currentDistance);
     } else {
-        sprintf(distStr, "%.0f", currentDistance);
+        sprintf(distStr, "%.1f", currentDistance);
     }
 
     M5.Display.drawString(distStr, SCREEN_WIDTH / 2, 100);
@@ -232,13 +236,13 @@ void updateDistanceDisplay() {
     // Display unit
     M5.Display.setTextColor(COLOR_UNIT);
     M5.Display.setFont(&fonts::FreeSansBold12pt7b);
-    M5.Display.drawString("mm", SCREEN_WIDTH / 2, 140);
+    M5.Display.drawString("m", SCREEN_WIDTH / 2, 140);
 
     // Display in centimeters (smaller)
     M5.Display.setTextColor(TFT_DARKGREY);
     M5.Display.setFont(&fonts::FreeSans9pt7b);
     char cmStr[20];
-    sprintf(cmStr, "(%.2f cm)", currentDistance / 10.0);
+    sprintf(cmStr, "(%.1f cm / %.0f mm)", currentDistance * 100.0, currentDistance * 1000.0);
     M5.Display.drawString(cmStr, SCREEN_WIDTH / 2, 170);
 }
 
