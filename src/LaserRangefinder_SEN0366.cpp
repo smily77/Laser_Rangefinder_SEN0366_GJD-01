@@ -92,16 +92,39 @@ bool LaserRangefinder_SEN0366::startContinuousMeasurement() {
         printHex(cmd, 4, "TX Start Continuous: ");
     }
 
+    // Clear any old data before starting
+    clearSerialBuffer();
+
     // Note: This command starts streaming data, no initial ACK expected
-    return sendCommand(cmd, 4);
+    if (!sendCommand(cmd, 4)) {
+        return false;
+    }
+
+    // Give sensor time to start streaming
+    delay(200);
+
+    if (_debug) {
+        _debugSerial->println("Continuous measurement started, waiting for data...");
+    }
+
+    return true;
 }
 
 bool LaserRangefinder_SEN0366::readContinuousDistance(float& distance) {
     // In continuous mode, device sends measurements automatically
     // Format: <ADDR> 06 82 ddd.ddd <CS> or <ADDR> 06 82 ddd.dddd <CS>
 
-    if (_serial->available() < 11) { // Minimum message size
-        return false;
+    // Wait briefly for data if not immediately available
+    if (_serial->available() < 11) {
+        unsigned long waitStart = millis();
+        while (_serial->available() < 11 && (millis() - waitStart) < 50) {
+            delay(5);
+        }
+
+        // If still no data after waiting, return false
+        if (_serial->available() == 0) {
+            return false;
+        }
     }
 
     uint8_t response[20];
@@ -132,9 +155,18 @@ bool LaserRangefinder_SEN0366::readContinuousDistance(float& distance) {
                 }
             }
         }
+
+        // Small delay to let more data arrive
+        if (_serial->available() == 0) {
+            delay(5);
+        }
     }
 
     if (len < 11) {
+        if (_debug) {
+            _debugSerial->print("Incomplete message, len=");
+            _debugSerial->println(len);
+        }
         return false;
     }
 
@@ -146,8 +178,41 @@ bool LaserRangefinder_SEN0366::readContinuousDistance(float& distance) {
 }
 
 bool LaserRangefinder_SEN0366::stopContinuousMeasurement() {
-    // Stop continuous mode by turning off the laser
-    return controlLaser(SEN0366_LASER_OFF);
+    // Command: <ADDR> 06 05 <CS> (Control Laser Off)
+    uint8_t cmd[4];
+    cmd[0] = _address;
+    cmd[1] = 0x06;
+    cmd[2] = 0x05;
+    cmd[3] = calculateChecksum(cmd, 3);
+
+    if (_debug) {
+        printHex(cmd, 4, "TX Stop Continuous (Laser Off): ");
+    }
+
+    if (!sendCommand(cmd, 4)) {
+        return false;
+    }
+
+    // Wait for response
+    uint8_t response[6];
+    uint8_t len = 0;
+    if (waitForResponse(response, sizeof(response), len)) {
+        if (_debug) {
+            printHex(response, len, "RX Stop Continuous: ");
+        }
+
+        // Expected: <ADDR> 06 85 00 <CS> (laser off confirmation)
+        if (len >= 4 && response[0] == _address && response[1] == 0x06 && response[2] == 0x85) {
+            // Clear any remaining measurement data from buffer
+            clearSerialBuffer();
+            return true;
+        }
+    }
+
+    // Even if no response, clear buffer and return success
+    // (some firmware versions may not send ACK)
+    clearSerialBuffer();
+    return true;
 }
 
 void LaserRangefinder_SEN0366::takeSingleMeasurementToCache() {

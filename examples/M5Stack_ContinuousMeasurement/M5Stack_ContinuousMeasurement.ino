@@ -75,6 +75,9 @@ void setup() {
     rangefinder.begin(9600, RXD2, TXD2);
     delay(500);
 
+    // Enable debug mode to see communication details
+    rangefinder.setDebug(true, &Serial);
+
     // Configure rangefinder for optimal continuous measurement
     Serial.println("Configuring rangefinder...");
 
@@ -85,7 +88,7 @@ void setup() {
         Serial.println("Warning: Could not set resolution");
     }
 
-    delay(100);
+    delay(200);
 
     // Set measurement frequency to 10Hz
     if (rangefinder.setFrequency(SEN0366_FREQ_10HZ)) {
@@ -94,13 +97,14 @@ void setup() {
         Serial.println("Warning: Could not set frequency");
     }
 
-    delay(100);
+    delay(200);
 
     // Start continuous measurement
     Serial.println("Starting continuous measurement...");
     if (rangefinder.startContinuousMeasurement()) {
         measurementActive = true;
-        Serial.println("Continuous measurement started");
+        Serial.println("Continuous measurement started successfully");
+        Serial.println("Waiting for measurement data...");
     } else {
         Serial.println("ERROR: Could not start continuous measurement");
         displayError("Failed to start measurement");
@@ -137,6 +141,7 @@ void loop() {
             currentDistance = distance;
             measurementCount++;
             lastMeasurementTime = millis();
+            errorCount = 0; // Reset error count on successful read
 
             // Print to serial for debugging
             // IMPORTANT: Sensor returns distance in METERS
@@ -152,10 +157,12 @@ void loop() {
             }
         } else {
             // Check if we haven't received data for too long
-            if (millis() - lastMeasurementTime > 2000) {
+            if (measurementCount > 0 && millis() - lastMeasurementTime > 2000) {
                 errorCount++;
-                if (errorCount % 10 == 0) {
-                    Serial.println("Warning: No measurement data");
+                if (errorCount % 20 == 0) {
+                    Serial.println("Warning: No measurement data received");
+                    Serial.print("Error count: ");
+                    Serial.println(errorCount);
                 }
             }
         }
