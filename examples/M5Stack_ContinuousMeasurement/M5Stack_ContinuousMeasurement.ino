@@ -273,7 +273,7 @@ void updateDistanceDisplay() {
     // Display in centimeters (smaller)
     M5.Display.setTextColor(TFT_DARKGREY);
     M5.Display.setFont(&fonts::FreeSans9pt7b);
-    char cmStr[20];
+    char cmStr[32];  // Increased buffer size to prevent overflow
     sprintf(cmStr, "(%.1f cm / %.0f mm)", currentDistance * 100.0, currentDistance * 1000.0);
     M5.Display.drawString(cmStr, SCREEN_WIDTH / 2, 170);
 }
