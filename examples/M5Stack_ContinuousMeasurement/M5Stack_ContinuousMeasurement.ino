@@ -118,23 +118,45 @@ void setup() {
 void loop() {
     M5.update();
 
-    // Check for button press to stop/start measurement
+    // Left button (A): Start/Stop continuous measurement
     if (M5.BtnA.wasPressed()) {
         if (measurementActive) {
             rangefinder.stopContinuousMeasurement();
             measurementActive = false;
-            Serial.println("Measurement stopped");
+            Serial.println("Continuous measurement stopped");
             displayStatus("STOPPED", COLOR_STATUS_ERROR);
         } else {
             rangefinder.startContinuousMeasurement();
             measurementActive = true;
-            Serial.println("Measurement started");
+            measurementCount = 0; // Reset count
+            Serial.println("Continuous measurement started");
             displayStatus("RUNNING", COLOR_STATUS_OK);
         }
         delay(200);
     }
 
-    // Read distance measurement
+    // Right button (C): Single measurement (only when continuous mode is stopped)
+    if (M5.BtnC.wasPressed() && !measurementActive) {
+        Serial.println("Taking single measurement...");
+        displayStatus("MEASURING", TFT_YELLOW);
+
+        float distance;
+        if (rangefinder.singleMeasurement(distance)) {
+            currentDistance = distance;
+            lastMeasurementTime = millis();
+            Serial.print("Single measurement: ");
+            Serial.print(currentDistance, 3);
+            Serial.println(" m");
+            updateDistanceDisplay();
+            displayStatus("STOPPED", COLOR_STATUS_ERROR);
+        } else {
+            Serial.println("Single measurement failed");
+            displayStatus("ERROR", COLOR_STATUS_ERROR);
+        }
+        delay(200);
+    }
+
+    // Read distance measurement in continuous mode
     if (measurementActive) {
         float distance;
         if (rangefinder.readContinuousDistance(distance)) {
@@ -173,9 +195,11 @@ void loop() {
         lastUpdateTime = millis();
         updateDistanceDisplay();
 
-        // Update status indicator
+        // Update status indicator based on current state
         if (measurementActive) {
             displayStatus("RUNNING", COLOR_STATUS_OK);
+        } else {
+            displayStatus("STOPPED", COLOR_STATUS_ERROR);
         }
     }
 
@@ -215,6 +239,7 @@ void drawMainScreen() {
     M5.Display.setTextColor(TFT_WHITE);
     M5.Display.setFont(&fonts::Font2);
     M5.Display.drawString("Start/Stop", 40, 225);
+    M5.Display.drawString("Single", 280, 225);
 
     // Draw status label
     M5.Display.drawString("Status:", 20, 200);

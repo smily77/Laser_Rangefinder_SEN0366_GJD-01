@@ -691,7 +691,8 @@ bool LaserRangefinder_SEN0366::parseDistanceResponse(const uint8_t* response, ui
     }
 
     // Verify header
-    if (response[1] != 0x06 || (response[2] != 0x82 && response[2] != 0x87)) {
+    // Accept 0x82, 0x83 (continuous measurement), 0x87 (single measurement)
+    if (response[1] != 0x06 || (response[2] != 0x82 && response[2] != 0x83 && response[2] != 0x87)) {
         if (_debug) {
             _debugSerial->print("Invalid response header: ");
             _debugSerial->print(response[1], HEX);
