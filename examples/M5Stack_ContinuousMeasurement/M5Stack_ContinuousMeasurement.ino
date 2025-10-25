@@ -18,6 +18,8 @@
  * - Real-time measurement updates
  * - Beautiful font rendering
  * - Status indicators
+ * - Visual laser indicator (red beam symbol)
+ * - Audible beep for single measurements
  *
  * @author GJD-01
  * @date 2024
@@ -60,6 +62,10 @@ void setup() {
     // Initialize M5Stack
     auto cfg = M5.config();
     M5.begin(cfg);
+
+    // Initialize speaker for beep sounds
+    M5.Speaker.begin();
+    M5.Speaker.setVolume(128);  // Set medium volume (0-255)
 
     // Initialize display
     M5.Display.setRotation(1);
@@ -127,6 +133,7 @@ void loop() {
             laserEnabled = true;
             Serial.println("Laser turned ON");
         }
+        updateLaserSymbol();  // Update laser symbol display
         delay(200);
     }
 
@@ -143,8 +150,13 @@ void loop() {
             Serial.print(currentDistance, 3);
             Serial.println(" m");
             updateDistanceDisplay();
+
+            // Play a short beep to indicate successful measurement
+            M5.Speaker.tone(2000, 100);  // 2kHz tone for 100ms
+
             // Laser turns off automatically after single measurement
             laserEnabled = false;
+            updateLaserSymbol();  // Update laser symbol display
             displayStatus("IDLE", TFT_DARKGREY);
         } else {
             Serial.println("Single measurement failed");
@@ -162,6 +174,7 @@ void loop() {
             if (laserEnabled) {
                 rangefinder.controlLaser(SEN0366_LASER_OFF);
                 laserEnabled = false;
+                updateLaserSymbol();  // Update laser symbol display
             }
             Serial.println("Continuous measurement stopped, laser OFF");
             displayStatus("IDLE", TFT_DARKGREY);
@@ -223,6 +236,25 @@ void loop() {
     delay(10);
 }
 
+void drawLaserSymbol(int x, int y) {
+    // Draw a small laser beam symbol (red circle with rays)
+    M5.Display.fillCircle(x, y, 5, TFT_RED);
+    M5.Display.drawLine(x - 10, y, x - 6, y, TFT_RED);
+    M5.Display.drawLine(x + 6, y, x + 10, y, TFT_RED);
+    M5.Display.drawLine(x - 7, y - 7, x - 4, y - 4, TFT_RED);
+    M5.Display.drawLine(x + 4, y + 4, x + 7, y + 7, TFT_RED);
+}
+
+void updateLaserSymbol() {
+    // Clear the laser symbol area
+    M5.Display.fillRect(SCREEN_WIDTH / 2 + 65, 15, 25, 20, COLOR_BG);
+
+    // Draw laser symbol if enabled
+    if (laserEnabled) {
+        drawLaserSymbol(SCREEN_WIDTH / 2 + 75, 25);
+    }
+}
+
 void displayStartupScreen() {
     M5.Display.fillScreen(COLOR_BG);
     M5.Display.setTextColor(TFT_CYAN);
@@ -248,6 +280,9 @@ void drawMainScreen() {
     M5.Display.setTextColor(TFT_CYAN);
     M5.Display.setFont(&fonts::FreeSansBold12pt7b);
     M5.Display.drawString("DISTANCE", SCREEN_WIDTH / 2, 25);
+
+    // Draw laser symbol if enabled
+    updateLaserSymbol();
 
     // Draw separator line
     M5.Display.drawLine(20, 45, SCREEN_WIDTH - 20, 45, TFT_DARKGREY);
