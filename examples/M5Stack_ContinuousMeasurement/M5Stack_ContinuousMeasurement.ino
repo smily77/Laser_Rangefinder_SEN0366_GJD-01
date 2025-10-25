@@ -119,11 +119,11 @@ void loop() {
     // Left button (A): Laser On/Off
     if (M5.BtnA.wasPressed()) {
         if (laserEnabled) {
-            rangefinder.laserOff();
+            rangefinder.controlLaser(SEN0366_LASER_OFF);
             laserEnabled = false;
             Serial.println("Laser turned OFF");
         } else {
-            rangefinder.laserOn();
+            rangefinder.controlLaser(SEN0366_LASER_ON);
             laserEnabled = true;
             Serial.println("Laser turned ON");
         }
@@ -160,7 +160,7 @@ void loop() {
             measurementActive = false;
             // Turn off laser when stopping continuous measurement
             if (laserEnabled) {
-                rangefinder.laserOff();
+                rangefinder.controlLaser(SEN0366_LASER_OFF);
                 laserEnabled = false;
             }
             Serial.println("Continuous measurement stopped, laser OFF");
