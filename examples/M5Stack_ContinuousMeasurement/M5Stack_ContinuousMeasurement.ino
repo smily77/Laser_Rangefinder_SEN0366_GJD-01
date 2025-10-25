@@ -142,6 +142,10 @@ void loop() {
         Serial.println("Taking single measurement...");
         displayStatus("MEASURING", TFT_YELLOW);
 
+        // Laser turns on automatically during single measurement
+        laserEnabled = true;
+        updateLaserSymbol();  // Show laser symbol
+
         float distance;
         if (rangefinder.singleMeasurement(distance)) {
             currentDistance = distance;
@@ -156,10 +160,13 @@ void loop() {
 
             // Laser turns off automatically after single measurement
             laserEnabled = false;
-            updateLaserSymbol();  // Update laser symbol display
+            updateLaserSymbol();  // Hide laser symbol
             displayStatus("IDLE", TFT_DARKGREY);
         } else {
             Serial.println("Single measurement failed");
+            // Laser turns off after failed measurement
+            laserEnabled = false;
+            updateLaserSymbol();  // Hide laser symbol
             displayStatus("ERROR", COLOR_STATUS_ERROR);
         }
         delay(200);
@@ -174,7 +181,7 @@ void loop() {
             if (laserEnabled) {
                 rangefinder.controlLaser(SEN0366_LASER_OFF);
                 laserEnabled = false;
-                updateLaserSymbol();  // Update laser symbol display
+                updateLaserSymbol();  // Hide laser symbol
             }
             Serial.println("Continuous measurement stopped, laser OFF");
             displayStatus("IDLE", TFT_DARKGREY);
@@ -182,7 +189,10 @@ void loop() {
             rangefinder.startContinuousMeasurement();
             measurementActive = true;
             measurementCount = 0; // Reset count
-            Serial.println("Continuous measurement started");
+            // Laser turns on automatically during continuous measurement
+            laserEnabled = true;
+            updateLaserSymbol();  // Show laser symbol
+            Serial.println("Continuous measurement started, laser ON");
             displayStatus("RUNNING", COLOR_STATUS_OK);
         }
         delay(200);
@@ -246,12 +256,12 @@ void drawLaserSymbol(int x, int y) {
 }
 
 void updateLaserSymbol() {
-    // Clear the laser symbol area
-    M5.Display.fillRect(SCREEN_WIDTH / 2 + 65, 15, 25, 20, COLOR_BG);
+    // Clear the laser symbol area (moved 15 pixels to the right)
+    M5.Display.fillRect(SCREEN_WIDTH / 2 + 80, 15, 25, 20, COLOR_BG);
 
-    // Draw laser symbol if enabled
+    // Draw laser symbol if enabled (moved 15 pixels to the right)
     if (laserEnabled) {
-        drawLaserSymbol(SCREEN_WIDTH / 2 + 75, 25);
+        drawLaserSymbol(SCREEN_WIDTH / 2 + 90, 25);
     }
 }
 
