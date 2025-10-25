@@ -46,11 +46,15 @@ const uint16_t COLOR_STATUS_ERROR = TFT_RED;
 // Measurement state
 float currentDistance = 0.0;
 bool measurementActive = false;
+bool laserEnabled = false;
 unsigned long lastUpdateTime = 0;
 unsigned long lastMeasurementTime = 0;
 const unsigned long DISPLAY_UPDATE_INTERVAL = 100; // ms
 int measurementCount = 0;
 int errorCount = 0;
+
+// Sprite for flicker-free distance display
+LGFX_Sprite distanceSprite(&M5.Display);
 
 void setup() {
     // Initialize M5Stack
@@ -99,44 +103,35 @@ void setup() {
 
     delay(200);
 
-    // Start continuous measurement
-    Serial.println("Starting continuous measurement...");
-    if (rangefinder.startContinuousMeasurement()) {
-        measurementActive = true;
-        Serial.println("Continuous measurement started successfully");
-        Serial.println("Waiting for measurement data...");
-    } else {
-        Serial.println("ERROR: Could not start continuous measurement");
-        displayError("Failed to start measurement");
-        while (1) delay(100);
-    }
+    // Initialize sprite for flicker-free distance display
+    distanceSprite.createSprite(SCREEN_WIDTH, 140);
+    distanceSprite.setTextDatum(middle_center);
 
-    // Draw main screen
+    // Draw main screen in Idle state
     drawMainScreen();
+    displayStatus("IDLE", TFT_DARKGREY);
+    Serial.println("Ready - Press buttons to start");
 }
 
 void loop() {
     M5.update();
 
-    // Left button (A): Start/Stop continuous measurement
+    // Left button (A): Laser On/Off
     if (M5.BtnA.wasPressed()) {
-        if (measurementActive) {
-            rangefinder.stopContinuousMeasurement();
-            measurementActive = false;
-            Serial.println("Continuous measurement stopped");
-            displayStatus("STOPPED", COLOR_STATUS_ERROR);
+        if (laserEnabled) {
+            rangefinder.laserOff();
+            laserEnabled = false;
+            Serial.println("Laser turned OFF");
         } else {
-            rangefinder.startContinuousMeasurement();
-            measurementActive = true;
-            measurementCount = 0; // Reset count
-            Serial.println("Continuous measurement started");
-            displayStatus("RUNNING", COLOR_STATUS_OK);
+            rangefinder.laserOn();
+            laserEnabled = true;
+            Serial.println("Laser turned ON");
         }
         delay(200);
     }
 
-    // Right button (C): Single measurement (only when continuous mode is stopped)
-    if (M5.BtnC.wasPressed() && !measurementActive) {
+    // Middle button (B): Single measurement (only when continuous mode is stopped)
+    if (M5.BtnB.wasPressed() && !measurementActive) {
         Serial.println("Taking single measurement...");
         displayStatus("MEASURING", TFT_YELLOW);
 
@@ -148,10 +143,34 @@ void loop() {
             Serial.print(currentDistance, 3);
             Serial.println(" m");
             updateDistanceDisplay();
-            displayStatus("STOPPED", COLOR_STATUS_ERROR);
+            // Laser turns off automatically after single measurement
+            laserEnabled = false;
+            displayStatus("IDLE", TFT_DARKGREY);
         } else {
             Serial.println("Single measurement failed");
             displayStatus("ERROR", COLOR_STATUS_ERROR);
+        }
+        delay(200);
+    }
+
+    // Right button (C): Start/Stop continuous measurement
+    if (M5.BtnC.wasPressed()) {
+        if (measurementActive) {
+            rangefinder.stopContinuousMeasurement();
+            measurementActive = false;
+            // Turn off laser when stopping continuous measurement
+            if (laserEnabled) {
+                rangefinder.laserOff();
+                laserEnabled = false;
+            }
+            Serial.println("Continuous measurement stopped, laser OFF");
+            displayStatus("IDLE", TFT_DARKGREY);
+        } else {
+            rangefinder.startContinuousMeasurement();
+            measurementActive = true;
+            measurementCount = 0; // Reset count
+            Serial.println("Continuous measurement started");
+            displayStatus("RUNNING", COLOR_STATUS_OK);
         }
         delay(200);
     }
@@ -198,8 +217,6 @@ void loop() {
         // Update status indicator based on current state
         if (measurementActive) {
             displayStatus("RUNNING", COLOR_STATUS_OK);
-        } else {
-            displayStatus("STOPPED", COLOR_STATUS_ERROR);
         }
     }
 
@@ -238,20 +255,21 @@ void drawMainScreen() {
     // Draw button labels at bottom
     M5.Display.setTextColor(TFT_WHITE);
     M5.Display.setFont(&fonts::Font2);
-    M5.Display.drawString("Start/Stop", 40, 225);
-    M5.Display.drawString("Single", 280, 225);
+    M5.Display.drawString("Laser", 40, 225);
+    M5.Display.drawString("Single", 160, 225);
+    M5.Display.drawString("Start/Stop", 280, 225);
 
     // Draw status label
     M5.Display.drawString("Status:", 20, 200);
 }
 
 void updateDistanceDisplay() {
-    // Clear distance area
-    M5.Display.fillRect(0, 50, SCREEN_WIDTH, 140, COLOR_BG);
+    // Clear sprite
+    distanceSprite.fillSprite(COLOR_BG);
 
     // Display distance in meters (sensor returns METERS!)
-    M5.Display.setTextColor(COLOR_DISTANCE);
-    M5.Display.setFont(&fonts::FreeSansBold24pt7b);
+    distanceSprite.setTextColor(COLOR_DISTANCE);
+    distanceSprite.setFont(&fonts::FreeSansBold24pt7b);
 
     char distStr[20];
     // Format distance in meters with appropriate precision
@@ -263,29 +281,32 @@ void updateDistanceDisplay() {
         sprintf(distStr, "%.1f", currentDistance);
     }
 
-    M5.Display.drawString(distStr, SCREEN_WIDTH / 2, 100);
+    distanceSprite.drawString(distStr, SCREEN_WIDTH / 2, 50);
 
     // Display unit
-    M5.Display.setTextColor(COLOR_UNIT);
-    M5.Display.setFont(&fonts::FreeSansBold12pt7b);
-    M5.Display.drawString("m", SCREEN_WIDTH / 2, 140);
+    distanceSprite.setTextColor(COLOR_UNIT);
+    distanceSprite.setFont(&fonts::FreeSansBold12pt7b);
+    distanceSprite.drawString("m", SCREEN_WIDTH / 2, 90);
 
     // Display in centimeters (smaller)
-    M5.Display.setTextColor(TFT_DARKGREY);
-    M5.Display.setFont(&fonts::FreeSans9pt7b);
+    distanceSprite.setTextColor(TFT_DARKGREY);
+    distanceSprite.setFont(&fonts::FreeSans9pt7b);
     char cmStr[32];  // Increased buffer size to prevent overflow
     sprintf(cmStr, "(%.1f cm / %.0f mm)", currentDistance * 100.0, currentDistance * 1000.0);
-    M5.Display.drawString(cmStr, SCREEN_WIDTH / 2, 170);
+    distanceSprite.drawString(cmStr, SCREEN_WIDTH / 2, 120);
+
+    // Push sprite to display in one operation (prevents flickering)
+    distanceSprite.pushSprite(0, 50);
 }
 
 void displayStatus(const char* status, uint16_t color) {
-    // Clear status area
-    M5.Display.fillRect(70, 190, 100, 20, COLOR_BG);
+    // Clear status area (wider to prevent artifacts from longer words like "MEASURING")
+    M5.Display.fillRect(70, 190, 160, 20, COLOR_BG);
 
     // Draw status
     M5.Display.setTextColor(color);
     M5.Display.setFont(&fonts::FreeSansBold9pt7b);
-    M5.Display.drawString(status, 120, 200);
+    M5.Display.drawString(status, 150, 200);
 }
 
 void displayError(const char* errorMsg) {
