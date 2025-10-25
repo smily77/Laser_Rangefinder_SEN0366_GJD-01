@@ -178,41 +178,18 @@ bool LaserRangefinder_SEN0366::readContinuousDistance(float& distance) {
 }
 
 bool LaserRangefinder_SEN0366::stopContinuousMeasurement() {
-    // Command: <ADDR> 06 05 <CS> (Control Laser Off)
-    uint8_t cmd[4];
-    cmd[0] = _address;
-    cmd[1] = 0x06;
-    cmd[2] = 0x05;
-    cmd[3] = calculateChecksum(cmd, 3);
-
+    // Stop continuous measurement by turning laser off
     if (_debug) {
-        printHex(cmd, 4, "TX Stop Continuous (Laser Off): ");
+        if (_debugSerial) _debugSerial->println("Stopping continuous measurement...");
     }
 
-    if (!sendCommand(cmd, 4)) {
-        return false;
-    }
+    // Use controlLaser method to turn laser off
+    bool result = controlLaser(SEN0366_LASER_OFF);
 
-    // Wait for response
-    uint8_t response[6];
-    uint8_t len = 0;
-    if (waitForResponse(response, sizeof(response), len)) {
-        if (_debug) {
-            printHex(response, len, "RX Stop Continuous: ");
-        }
-
-        // Expected: <ADDR> 06 85 00 <CS> (laser off confirmation)
-        if (len >= 4 && response[0] == _address && response[1] == 0x06 && response[2] == 0x85) {
-            // Clear any remaining measurement data from buffer
-            clearSerialBuffer();
-            return true;
-        }
-    }
-
-    // Even if no response, clear buffer and return success
-    // (some firmware versions may not send ACK)
+    // Clear any remaining measurement data from buffer
     clearSerialBuffer();
-    return true;
+
+    return result;
 }
 
 void LaserRangefinder_SEN0366::takeSingleMeasurementToCache() {
@@ -494,21 +471,20 @@ bool LaserRangefinder_SEN0366::reviseDistance(bool positive, uint8_t adjustment)
 // ==================== Control Commands ====================
 
 bool LaserRangefinder_SEN0366::controlLaser(uint8_t on) {
-    // Command: <ADDR> 06 05 <CS>
-    // Note: The on/off control seems to be by command presence, not parameter
-    // Based on doc: 06 05 is the command, on/off might be in different message
-    // Using address-specific command per protocol
-    uint8_t cmd[4];
+    // Command: <ADDR> 06 05 <ON/OFF> <CS>
+    // ON/OFF: 0x00 = Laser OFF, 0x01 = Laser ON
+    uint8_t cmd[5];
     cmd[0] = _address;
     cmd[1] = 0x06;
     cmd[2] = 0x05;
-    cmd[3] = calculateChecksum(cmd, 3);
+    cmd[3] = on;  // 0x00 for OFF, 0x01 for ON
+    cmd[4] = calculateChecksum(cmd, 4);
 
     if (_debug) {
-        printHex(cmd, 4, "TX Control Laser: ");
+        printHex(cmd, 5, on ? "TX Laser ON: " : "TX Laser OFF: ");
     }
 
-    if (!sendCommand(cmd, 4)) {
+    if (!sendCommand(cmd, 5)) {
         return false;
     }
 
@@ -522,8 +498,15 @@ bool LaserRangefinder_SEN0366::controlLaser(uint8_t on) {
         printHex(response, len, "RX Control Laser: ");
     }
 
-    // Expected: <ADDR> 06 85 01 <CS> or <ADDR> 06 85 00 <CS>
-    return (len >= 4 && response[0] == _address && response[1] == 0x06 && response[2] == 0x85);
+    // Expected: <ADDR> 06 85 <ON/OFF> <CS>
+    if (len >= 5 && response[0] == _address && response[1] == 0x06 && response[2] == 0x85) {
+        // Verify the laser state in response matches what we requested
+        if (response[3] == on) {
+            return true;
+        }
+    }
+
+    return false;
 }
 
 bool LaserRangefinder_SEN0366::shutDown() {
