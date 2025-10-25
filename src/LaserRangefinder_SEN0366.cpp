@@ -112,7 +112,7 @@ bool LaserRangefinder_SEN0366::startContinuousMeasurement() {
 
 bool LaserRangefinder_SEN0366::readContinuousDistance(float& distance) {
     // In continuous mode, device sends measurements automatically
-    // Format: <ADDR> 06 82 ddd.ddd <CS> or <ADDR> 06 82 ddd.dddd <CS>
+    // Format: <ADDR> 06 82/83 ddd.ddd <CS> or <ADDR> 06 82/83 ddd.dddd <CS>
 
     // Wait briefly for data if not immediately available
     if (_serial->available() < 11) {
@@ -137,8 +137,8 @@ bool LaserRangefinder_SEN0366::readContinuousDistance(float& distance) {
 
         // Check if we have a complete message
         if (len >= 11) {
-            // Verify basic structure
-            if (response[0] == _address && response[1] == 0x06 && response[2] == 0x82) {
+            // Verify basic structure (accept both 0x82 and 0x83 for continuous measurements)
+            if (response[0] == _address && response[1] == 0x06 && (response[2] == 0x82 || response[2] == 0x83)) {
                 // Calculate expected checksum position
                 // Message ends with <CS>, need to find the decimal point and digits
                 uint8_t checksumPos = 0;
