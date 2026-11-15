@@ -11,11 +11,13 @@
 
 LaserRangefinder_SEN0366::LaserRangefinder_SEN0366(HardwareSerial* serial)
     : _serial(serial), _address(SEN0366_BROADCAST_ADDR), _timeout(SEN0366_TIMEOUT_MS),
+      _measTimeout(SEN0366_MEAS_TIMEOUT_MS),
       _debug(false), _debugSerial(&Serial) {
 }
 
 LaserRangefinder_SEN0366::LaserRangefinder_SEN0366(HardwareSerial* serial, uint8_t address)
     : _serial(serial), _address(address), _timeout(SEN0366_TIMEOUT_MS),
+      _measTimeout(SEN0366_MEAS_TIMEOUT_MS),
       _debug(false), _debugSerial(&Serial) {
 }
 
@@ -65,10 +67,10 @@ bool LaserRangefinder_SEN0366::singleMeasurement(float& distance) {
         return false;
     }
 
-    // Wait for response
+    // Wait for response (measurement timeout: answers can take up to ~3 s)
     uint8_t response[20];
     uint8_t len = 0;
-    if (!waitForResponse(response, sizeof(response), len)) {
+    if (!waitForResponse(response, sizeof(response), len, _measTimeout)) {
         if (_debug) _debugSerial->println("Single measurement: No response");
         return false;
     }
@@ -498,12 +500,16 @@ bool LaserRangefinder_SEN0366::controlLaser(uint8_t on) {
         printHex(response, len, "RX Control Laser: ");
     }
 
-    // Expected: <ADDR> 06 85 <ON/OFF> <CS>
-    if (len >= 5 && response[0] == _address && response[1] == 0x06 && response[2] == 0x85) {
-        // Verify the laser state in response matches what we requested
-        if (response[3] == on) {
-            return true;
-        }
+    // Observed on the device (2026-11-15): the answer is 80 06 85 01 F4 for
+    // BOTH laser on and laser off. The 4th byte is a success flag, not the
+    // laser state, and the address byte is the device address (0x80) even
+    // when the command was sent to broadcast 0xFA.
+    // -> check command code and checksum; check the address only when this
+    //    instance uses an individual address.
+    if (len >= 5 && response[1] == 0x06 && response[2] == 0x85 &&
+        (isBroadcast() || response[0] == _address) &&
+        checksumValid(response, 5)) {
+        return true;
     }
 
     return false;
@@ -599,6 +605,11 @@ bool LaserRangefinder_SEN0366::isBroadcast() const {
 
 void LaserRangefinder_SEN0366::setTimeout(uint32_t timeoutMs) {
     _timeout = timeoutMs;
+    _measTimeout = timeoutMs;
+}
+
+void LaserRangefinder_SEN0366::setMeasurementTimeout(uint32_t timeoutMs) {
+    _measTimeout = timeoutMs;
 }
 
 void LaserRangefinder_SEN0366::setDebug(bool enable, Stream* debugSerial) {
@@ -636,11 +647,22 @@ uint8_t LaserRangefinder_SEN0366::receiveResponse(uint8_t* buffer, uint8_t maxLe
     return len;
 }
 
+bool LaserRangefinder_SEN0366::checksumValid(const uint8_t* data, uint8_t len) {
+    // CS = ~SUM + 1  ->  sum of all bytes including CS is 0 (mod 256)
+    uint8_t sum = 0;
+    for (uint8_t i = 0; i < len; i++) sum += data[i];
+    return sum == 0;
+}
+
 bool LaserRangefinder_SEN0366::waitForResponse(uint8_t* buffer, uint8_t maxLen, uint8_t& len) {
+    return waitForResponse(buffer, maxLen, len, _timeout);
+}
+
+bool LaserRangefinder_SEN0366::waitForResponse(uint8_t* buffer, uint8_t maxLen, uint8_t& len, uint32_t timeoutMs) {
     unsigned long startTime = millis();
     len = 0;
 
-    while (millis() - startTime < _timeout) {
+    while (millis() - startTime < timeoutMs) {
         if (_serial->available()) {
             buffer[len++] = _serial->read();
 

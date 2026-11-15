@@ -49,6 +49,12 @@
 // Command Response Timeout (milliseconds)
 #define SEN0366_TIMEOUT_MS  1000
 
+// Measurement Response Timeout (milliseconds)
+// A measurement takes 730..1000 ms, on edges / weak targets up to ~3 s
+// (measured 2026-11-15). With a shorter limit the late answer is read by
+// the NEXT measurement.
+#define SEN0366_MEAS_TIMEOUT_MS  4000
+
 // Maximum distance string length
 #define SEN0366_MAX_DIST_STR_LEN  12
 
@@ -239,10 +245,16 @@ public:
     bool isBroadcast() const;
 
     /**
-     * @brief Set timeout for command responses
+     * @brief Set timeout for command AND measurement responses
      * @param timeoutMs Timeout in milliseconds
      */
     void setTimeout(uint32_t timeoutMs);
+
+    /**
+     * @brief Set timeout for measurement responses only (default SEN0366_MEAS_TIMEOUT_MS)
+     * @param timeoutMs Timeout in milliseconds
+     */
+    void setMeasurementTimeout(uint32_t timeoutMs);
 
     /**
      * @brief Enable or disable debug output
@@ -255,6 +267,7 @@ private:
     HardwareSerial* _serial;
     uint8_t _address;
     uint32_t _timeout;
+    uint32_t _measTimeout;
     bool _debug;
     Stream* _debugSerial;
 
@@ -263,6 +276,8 @@ private:
     bool sendCommand(const uint8_t* cmd, uint8_t len);
     uint8_t receiveResponse(uint8_t* buffer, uint8_t maxLen);
     bool waitForResponse(uint8_t* buffer, uint8_t maxLen, uint8_t& len);
+    bool waitForResponse(uint8_t* buffer, uint8_t maxLen, uint8_t& len, uint32_t timeoutMs);
+    bool checksumValid(const uint8_t* data, uint8_t len);
     bool parseDistanceResponse(const uint8_t* response, uint8_t len, float& distance);
     void printHex(const uint8_t* data, uint8_t len, const char* prefix = nullptr);
     void clearSerialBuffer();

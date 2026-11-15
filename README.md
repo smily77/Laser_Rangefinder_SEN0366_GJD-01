@@ -209,6 +209,8 @@ bool controlLaser(uint8_t on);
 bool shutDown();
 ```
 
+Der Sensor bestätigt Laser an **und** aus mit `80 06 85 01 F4` (4. Byte = Erfolg, nicht Laserzustand; Adresse 0x80 auch bei Broadcast). `controlLaser()` prüft deshalb Befehlscode und Prüfsumme (ab Version 1.2.0; vorher meldete `controlLaser(SEN0366_LASER_OFF)` immer `false`).
+
 ### Information
 
 ```cpp
@@ -345,7 +347,7 @@ rangefinder.begin();  // Ohne Parameter - nutzt existierende Initialisierung
 1. Überprüfen Sie die Auflösungseinstellung
 2. Stellen Sie sicher, dass das Zielobjekt reflektierend ist
 3. Vermeiden Sie direkte Sonneneinstrahlung
-4. Erhöhen Sie das Timeout: `rangefinder.setTimeout(2000)`
+4. Messungen dauern 730–1000 ms, an Kanten oder bei schwachem Ziel bis ~3 s. Das Mess-Timeout ist deshalb 4000 ms (`SEN0366_MEAS_TIMEOUT_MS`, änderbar mit `setMeasurementTimeout()`). Bei kürzerem Timeout landet die verspätete Antwort in der **nächsten** Messung (Wert vom vorherigen Winkel). `setTimeout()` setzt Befehls- und Mess-Timeout gemeinsam.
 
 ### M5Stack Core2 spezifische Probleme
 1. Port A nutzt: G32 (RX) und G33 (TX)
@@ -374,6 +376,11 @@ GJD-01
 - [DFRobot Product Page](https://www.dfrobot.com/product-2108.html)
 
 ## Changelog
+
+### Version 1.2.0 (2026-11-15)
+- `controlLaser()`: Bestätigung über Befehlscode + Prüfsumme statt Laserzustand/Adresse (OFF lieferte immer `false`)
+- Eigenes Mess-Timeout 4000 ms (`setMeasurementTimeout()`), Befehle weiterhin 1000 ms
+- Am Gerät getestet (ESP32, Pan/Tilt-Turm)
 
 ### Version 1.0.0 (2024)
 - Erste vollständige Implementierung
